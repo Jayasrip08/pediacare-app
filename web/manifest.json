@@ -1,0 +1,11 @@
+{
+  "name": "PediaCare",
+  "short_name": "PediaCare",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0F1E3D",
+  "theme_color": "#F7861E",
+  "description": "PediaCare - Smart healthcare app for clinics and parents.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
+}
