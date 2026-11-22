@@ -591,8 +591,8 @@ class _LogEyeExamSheet extends StatefulWidget {
 }
 
 class _LogEyeExamSheetState extends State<_LogEyeExamSheet> {
-  final _iopOD = TextEditingController(text: '15.0');
-  final _iopOS = TextEditingController(text: '15.5');
+  final _iopOD = TextEditingController();
+  final _iopOS = TextEditingController();
   final _diagCtrl = TextEditingController();
   final _slitCtrl = TextEditingController();
   final _fundusCtrl = TextEditingController();

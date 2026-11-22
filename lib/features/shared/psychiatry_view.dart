@@ -527,7 +527,7 @@ class _AddTherapyNoteSheet extends StatefulWidget {
 }
 
 class _AddTherapyNoteSheetState extends State<_AddTherapyNoteSheet> {
-  final _modalityCtrl = TextEditingController(text: 'Cognitive Behavioral Therapy (CBT)');
+  final _modalityCtrl = TextEditingController();
   final _sCtrl = TextEditingController();
   final _oCtrl = TextEditingController();
   final _aCtrl = TextEditingController();

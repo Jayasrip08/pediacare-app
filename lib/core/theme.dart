@@ -1,116 +1,124 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// Professional Pure Medical Blue & White Healthcare Theme
+/// Pediacare Design System Colors
 class AppColors {
   AppColors._();
 
-  // Vibrant Medical Blue (Pure Healthcare Royal Blue)
-  static const navy = Color(0xFF1565C0); // Vibrant Medical Blue
-  static const navyLight = Color(0xFF1976D2); // Crisp Medical Blue Surface
+  // Primary Brand Colors (#3478ED)
+  static const primary = Color(0xFF3478ED);
+  static const primaryDark = Color(0xFF2460D0);
+  static const primaryLight = Color(0xFF5991F2);
+  static const primarySoft = Color(0xFFEFF5FF);
 
-  // Unified Primary Accent (Medical Blue - Zero Third Color)
-  static const orange = Color(0xFF1565C0); // Unified Medical Blue
-  static const orangeSoft = Color(0xFFEFF6FF); // Soft Ice-Blue Tint
+  // Mint Green (#36C6B0)
+  static const mint = Color(0xFF36C6B0);
+  static const mintSoft = Color(0xFFE8F9F6);
 
-  // Clean White Surfaces
-  static const bg = Color(0xFFF8FAFC); // Clean Clinical Slate-White
-  static const cardBg = Color(0xFFFFFFFF); // Pure White Cards
-  static const ink = Color(0xFF0F172A); // High Contrast Slate Dark
-  static const muted = Color(0xFF64748B); // Slate Muted Text
-  static const line = Color(0xFFE2E8F0); // Crisp Clean Border
+  // Soft Lavender (#E9EDFF)
+  static const lavender = Color(0xFFE9EDFF);
+  static const lavenderDark = Color(0xFF7A8CD9);
 
-  // Status Tones (Exclusively Medical Blue & Ice White - Zero Third Color)
-  static const success = Color(0xFF1565C0); // Medical Blue
-  static const successSoft = Color(0xFFEFF6FF); // Soft Ice-Blue Pill
-  static const warning = Color(0xFF1565C0); // Medical Blue
-  static const warningSoft = Color(0xFFEFF6FF);
-  static const danger = Color(0xFF1565C0); // Medical Blue (No red)
-  static const dangerSoft = Color(0xFFEFF6FF);
-  static const info = Color(0xFF1565C0); // Medical Blue
-  static const infoSoft = Color(0xFFEFF6FF);
+  // Clean White Surfaces (#FFFFFF) & Base
+  static const bg = Color(0xFFFFFFFF);
+  static const cardBg = Color(0xFFFFFFFF);
+  static const ink = Color(0xFF1E293B);
+  static const muted = Color(0xFF64748B);
+  static const line = Color(0xFFE2E8F0);
+
+  // Backward-compatibility aliases
+  static const orange = primary;
+  static const orangeSoft = lavender;
+  static const navy = primary;
+  static const navyLight = primaryLight;
+
+  // Accents & Department Colors
+  static const success = mint;
+  static const successSoft = mintSoft;
+  static const warning = Color(0xFFF59E0B);
+  static const warningSoft = Color(0xFFFEF3C7);
+  static const danger = Color(0xFFEF4444);
+  static const dangerSoft = Color(0xFFFEE2E2);
+  static const info = primary;
+  static const infoSoft = lavender;
+
+  static const cyan = Color(0xFF0EA5E9);
+  static const cyanSoft = Color(0xFFE0F2FE);
+  static const pink = Color(0xFFEC4899);
+  static const pinkSoft = Color(0xFFFCE7F3);
+  static const purple = Color(0xFF8B5CF6);
+  static const purpleSoft = lavender;
+  static const amber = Color(0xFFF59E0B);
+  static const amberSoft = Color(0xFFFEF3C7);
+  static const green = mint;
+  static const greenSoft = mintSoft;
 }
 
+/// Typography: Poppins (Headers & Display) + Inter (Body & Muted)
 class AppText {
   AppText._();
 
-  static const List<String> _fontFamilyFallback = [
-    'Segoe UI',
-    'Roboto',
-    'Helvetica Neue',
-    'Arial',
-    'sans-serif',
-  ];
-
-  static const TextStyle display = TextStyle(
+  static TextStyle display = GoogleFonts.poppins(
     fontSize: 28,
     fontWeight: FontWeight.w700,
     color: AppColors.ink,
-    height: 1.15,
-    fontFamilyFallback: _fontFamilyFallback,
+    height: 1.2,
   );
-  static const TextStyle h1 = TextStyle(
+  static TextStyle h1 = GoogleFonts.poppins(
     fontSize: 22,
     fontWeight: FontWeight.w700,
     color: AppColors.ink,
-    height: 1.2,
-    fontFamilyFallback: _fontFamilyFallback,
+    height: 1.25,
   );
-  static const TextStyle h2 = TextStyle(
+  static TextStyle h2 = GoogleFonts.poppins(
     fontSize: 18,
     fontWeight: FontWeight.w700,
     color: AppColors.ink,
-    height: 1.25,
-    fontFamilyFallback: _fontFamilyFallback,
+    height: 1.3,
   );
-  static const TextStyle h3 = TextStyle(
+  static TextStyle h3 = GoogleFonts.poppins(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.ink,
-    height: 1.3,
-    fontFamilyFallback: _fontFamilyFallback,
+    height: 1.35,
   );
-  static const TextStyle body = TextStyle(
+  static TextStyle body = GoogleFonts.inter(
     fontSize: 14,
     color: AppColors.ink,
-    height: 1.4,
-    fontFamilyFallback: _fontFamilyFallback,
+    height: 1.45,
   );
-  static const TextStyle bodyBold = TextStyle(
+  static TextStyle bodyBold = GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppColors.ink,
-    height: 1.4,
-    fontFamilyFallback: _fontFamilyFallback,
+    height: 1.45,
   );
-  static const TextStyle muted = TextStyle(
+  static TextStyle muted = GoogleFonts.inter(
     fontSize: 13,
     color: AppColors.muted,
     height: 1.4,
-    fontFamilyFallback: _fontFamilyFallback,
   );
-  static const TextStyle small = TextStyle(
+  static TextStyle small = GoogleFonts.inter(
     fontSize: 12,
     color: AppColors.muted,
-    height: 1.3,
-    fontFamilyFallback: _fontFamilyFallback,
+    height: 1.35,
   );
-  static const TextStyle label = TextStyle(
+  static TextStyle label = GoogleFonts.poppins(
     fontSize: 11,
     fontWeight: FontWeight.w700,
-    color: AppColors.orange,
+    color: AppColors.primary,
     letterSpacing: 0.8,
-    fontFamilyFallback: _fontFamilyFallback,
   );
 }
 
 ThemeData buildTheme() {
   final scheme = ColorScheme.fromSeed(
-    seedColor: AppColors.navy,
+    seedColor: AppColors.primary,
     brightness: Brightness.light,
   ).copyWith(
-    primary: AppColors.navy,
+    primary: AppColors.primary,
     onPrimary: Colors.white,
-    secondary: AppColors.orange,
+    secondary: AppColors.mint,
     onSecondary: Colors.white,
     surface: Colors.white,
     onSurface: AppColors.ink,
@@ -119,7 +127,7 @@ ThemeData buildTheme() {
   );
 
   OutlineInputBorder border(Color c, [double w = 1]) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(color: c, width: w),
       );
 
@@ -127,14 +135,16 @@ ThemeData buildTheme() {
     useMaterial3: true,
     colorScheme: scheme,
     scaffoldBackgroundColor: AppColors.bg,
-    textTheme: const TextTheme()
-        .apply(bodyColor: AppColors.ink, displayColor: AppColors.ink),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.bg,
+    textTheme: GoogleFonts.interTextTheme().apply(
+      bodyColor: AppColors.ink,
+      displayColor: AppColors.ink,
+    ),
+    appBarTheme: AppBarTheme(
+      backgroundColor: Colors.white,
       foregroundColor: AppColors.ink,
       elevation: 0,
       scrolledUnderElevation: 0,
-      centerTitle: false,
+      centerTitle: true,
       titleTextStyle: AppText.h2,
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -145,43 +155,45 @@ ThemeData buildTheme() {
       hintStyle: AppText.muted,
       border: border(AppColors.line),
       enabledBorder: border(AppColors.line),
-      focusedBorder: border(AppColors.orange, 1.6),
+      focusedBorder: border(AppColors.primary, 1.8),
       errorBorder: border(AppColors.danger),
-      focusedErrorBorder: border(AppColors.danger, 1.6),
+      focusedErrorBorder: border(AppColors.danger, 1.8),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
       elevation: 8,
       height: 68,
-      indicatorColor: AppColors.orangeSoft,
+      indicatorColor: AppColors.lavender,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
-        return TextStyle(
+        return GoogleFonts.inter(
           fontSize: 11.5,
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          color: selected ? AppColors.navy : AppColors.muted,
-          fontFamilyFallback: AppText._fontFamilyFallback,
+          color: selected ? AppColors.primary : AppColors.muted,
         );
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return IconThemeData(
-            color: selected ? AppColors.navy : AppColors.muted, size: 24);
+          color: selected ? AppColors.primary : AppColors.muted,
+          size: 24,
+        );
       }),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: AppColors.navy,
-      contentTextStyle: const TextStyle(
+      backgroundColor: AppColors.primary,
+      contentTextStyle: GoogleFonts.inter(
         color: Colors.white,
         fontSize: 14,
-        fontFamilyFallback: AppText._fontFamilyFallback,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     ),
     dividerTheme: const DividerThemeData(color: AppColors.line, space: 1, thickness: 1),
     progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.orange, linearTrackColor: AppColors.line),
+      color: AppColors.primary,
+      linearTrackColor: AppColors.line,
+    ),
   );
 }

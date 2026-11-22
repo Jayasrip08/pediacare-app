@@ -91,18 +91,31 @@ class ChildChips extends ConsumerWidget {
 
 /// Scaffold for parent tabs that operate on the currently selected child.
 class ChildScope extends ConsumerWidget {
-  const ChildScope(
-      {super.key, required this.title, required this.builder, this.actions});
+  const ChildScope({
+    super.key,
+    required this.title,
+    required this.builder,
+    this.actions,
+    this.bottomNavigationBar,
+  });
 
   final String title;
   final Widget Function(BuildContext context, Child child) builder;
   final List<Widget>? actions;
+  final Widget? bottomNavigationBar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(selectedChildProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(title), actions: actions),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/parent/home'),
+        ),
+        title: Text(title),
+        actions: actions,
+      ),
       body: AsyncValueView<Child?>(
         value: selected,
         onRetry: () => ref.invalidate(childrenProvider),
@@ -126,6 +139,7 @@ class ChildScope extends ConsumerWidget {
           );
         },
       ),
+      bottomNavigationBar: bottomNavigationBar,
     );
   }
 }

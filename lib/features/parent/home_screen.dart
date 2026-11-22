@@ -7,648 +7,965 @@ import '../../core/utils.dart';
 import '../../core/widgets.dart';
 import '../../models/models.dart';
 import '../../providers.dart';
-import 'child_scope.dart';
+import 'parent_bottom_nav.dart';
 
-class ParentHomeScreen extends ConsumerWidget {
+class ParentHomeScreen extends ConsumerStatefulWidget {
   const ParentHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(profileProvider).valueOrNull;
-    final children = ref.watch(childrenProvider).valueOrNull ?? const <Child>[];
-    final childAsync = ref.watch(selectedChildProvider);
-    final child = childAsync.valueOrNull;
-
-    return Scaffold(
-      body: RefreshIndicator(
-        color: AppColors.orange,
-        edgeOffset: 80,
-        onRefresh: () async {
-          ref.invalidate(childrenProvider);
-          if (child != null) {
-            ref.invalidate(vaccinesProvider(child.id));
-            ref.invalidate(growthProvider(child.id));
-            ref.invalidate(childAppointmentsProvider(child.id));
-            ref.invalidate(recordsProvider(child.id));
-            ref.invalidate(prescriptionsProvider(child.id));
-          }
-        },
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            BrandHeader(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(greeting(),
-                                style: AppText.muted.copyWith(color: Colors.white70)),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Hi, ${(profile?.fullName ?? '').split(' ').first}',
-                              style: AppText.h1.copyWith(color: Colors.white, fontSize: 24),
-                            ),
-                          ],
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => context.push('/parent/profile'),
-                        child: InitialAvatar(name: profile?.fullName ?? '?', dark: true, size: 46),
-                      ),
-                    ],
-                  ),
-                  if (children.isNotEmpty) ...[
-                    const SizedBox(height: 18),
-                    const ChildChips(dark: true),
-                  ],
-                  if (child != null) ...[
-                    const SizedBox(height: 18),
-                    _DepartmentHeroCard(child: child),
-                  ],
-                ],
-              ),
-            ),
-            if (childAsync.isLoading && child == null)
-              const Padding(padding: EdgeInsets.all(48), child: LoadingView())
-            else if (child == null)
-              const _EmptyDashboardView()
-            else
-              _HomeBody(child: child),
-          ],
-        ),
-      ),
-    );
-  }
+  ConsumerState<ParentHomeScreen> createState() => _ParentHomeScreenState();
 }
 
-class _EmptyDashboardView extends StatelessWidget {
-  const _EmptyDashboardView();
+class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen> {
+  int _currentNavIndex = 0;
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 36),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AppCard(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-            child: Column(
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: AppColors.orangeSoft,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(Icons.person_add_alt_1_rounded,
-                      color: AppColors.navy, size: 32),
-                ),
-                const SizedBox(height: 16),
-                Text('Add Child Profile',
-                    style: AppText.h2, textAlign: TextAlign.center),
-                const SizedBox(height: 8),
-                Text(
-                  'Register your child to generate an automated vaccine schedule, record growth milestones, and access clinic records.',
-                  style: AppText.muted,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 22),
-                AppButton(
-                  label: 'Add Profile',
-                  icon: Icons.add_rounded,
-                  expand: false,
-                  onPressed: () => context.push('/parent/add-child'),
-                  kind: AppButtonKind.primary,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text('Healthcare Services', style: AppText.h3),
-          const SizedBox(height: 12),
-          const _ServiceInfoCard(
-            icon: Icons.vaccines_rounded,
-            title: 'Immunization Tracker',
-            description: 'Automatic Indian Academy of Pediatrics (IAP) schedule with due dates.',
-          ),
-          const SizedBox(height: 10),
-          const _ServiceInfoCard(
-            icon: Icons.show_chart_rounded,
-            title: 'Growth Milestones',
-            description: 'Track height, weight, and head circumference percentiles against WHO standards.',
-          ),
-          const SizedBox(height: 10),
-          const _ServiceInfoCard(
-            icon: Icons.medical_services_rounded,
-            title: 'Clinic Consults & Prescriptions',
-            description: 'Connect with your doctor, receive digital prescriptions, and view records.',
-          ),
-        ],
+  void _showChildPicker(BuildContext context) {
+    final children = ref.watch(localChildrenProvider);
+    final selectedId = ref.watch(selectedChildIdProvider);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-    );
-  }
-}
-
-class _ServiceInfoCard extends StatelessWidget {
-  const _ServiceInfoCard({
-    required this.icon,
-    required this.title,
-    required this.description,
-  });
-
-  final IconData icon;
-  final String title;
-  final String description;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.orangeSoft,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: AppColors.navy, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppText.bodyBold),
-                const SizedBox(height: 3),
-                Text(description, style: AppText.small),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Select Child Profile',
+                      style: AppText.h2.copyWith(fontSize: 18, fontWeight: FontWeight.w800),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        context.push('/parent/add-child');
+                      },
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('Add Child', style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (children.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          const Icon(Icons.child_care_rounded, size: 40, color: AppColors.muted),
+                          const SizedBox(height: 8),
+                          Text('No child profiles found', style: AppText.h3.copyWith(color: AppColors.ink)),
+                          const SizedBox(height: 4),
+                          const Text('Add your child to start tracking health records.', style: TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  ...children.map((c) {
+                  final isSelected = c.id == selectedId;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.lavender.withValues(alpha: 0.6) : Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      leading: CircleAvatar(
+                        radius: 22,
+                        backgroundColor: isSelected ? AppColors.primary : Colors.grey.shade200,
+                        child: Text(
+                          c.name.isNotEmpty ? c.name[0].toUpperCase() : 'C',
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : AppColors.ink,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        c.name,
+                        style: AppText.h3.copyWith(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: isSelected ? AppColors.primary : AppColors.ink,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${c.age} • ${c.gender[0].toUpperCase()}${c.gender.substring(1)}${c.bloodGroup != null ? ' • ${c.bloodGroup}' : ''}${c.weightKg != null ? ' • ${c.weightKg} kg' : ''}',
+                        style: AppText.muted.copyWith(fontSize: 12),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 24)
+                          : null,
+                      onTap: () {
+                        ref.read(selectedChildIdProvider.notifier).state = c.id;
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  );
+                }),
               ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
-}
 
-class _DepartmentHeroCard extends ConsumerWidget {
-  const _DepartmentHeroCard({required this.child});
-
-  final Child child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clinic = ref.watch(childClinicProvider(child.id)).valueOrNull;
-    final dept = clinic?.department ?? ClinicDepartment.pediatrics;
-
-    return switch (dept) {
-      ClinicDepartment.pediatrics => _NextVaccineCard(child: child),
-      ClinicDepartment.dental => _DentalHeroCard(child: child),
-      ClinicDepartment.dermatology => _DermaHeroCard(child: child),
-      ClinicDepartment.pregnancyCare => _PregnancyHeroCard(child: child),
-      ClinicDepartment.ophthalmology => _EyeHeroCard(child: child),
-      ClinicDepartment.psychiatry => _PsychiatryHeroCard(child: child),
-    };
-  }
-}
-
-class _NextVaccineCard extends ConsumerWidget {
-  const _NextVaccineCard({required this.child});
-
-  final Child child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final vaccines = ref.watch(vaccinesProvider(child.id)).valueOrNull;
-    final next = vaccines?.where((v) => v.status == 'pending').firstOrNull;
-
-    final String title;
-    final String subtitle;
-    if (vaccines == null) {
-      title = 'Loading…';
-      subtitle = '';
-    } else if (next == null) {
-      title = 'All vaccines done';
-      subtitle = 'Great job keeping ${child.name.split(' ').first} protected!';
-    } else {
-      title = next.name;
-      subtitle = next.isOverdue
-          ? 'Overdue since ${fmtShortDate(next.dueDate)} (${-next.daysToDue} days)'
-          : 'Due ${fmtShortDate(next.dueDate)} · ${relativeDays(next.dueDate)}';
-    }
-
-    return _HeroCardContainer(
-      color: AppColors.navy,
-      tag: 'NEXT VACCINE · PEDIATRICS',
-      title: title,
-      subtitle: subtitle,
-      icon: Icons.vaccines_rounded,
-      onTap: () => context.go('/parent/vaccines'),
+  void _showNotificationsSheet(BuildContext context, Appointment? upcomingAppt) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Notifications & Alerts', style: AppText.h2.copyWith(fontSize: 18, fontWeight: FontWeight.w800)),
+                  if (upcomingAppt != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: AppColors.lavender, borderRadius: BorderRadius.circular(8)),
+                      child: const Text('1 New', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 11)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (upcomingAppt != null)
+                _buildNotificationItem(
+                  icon: Icons.event_available_rounded,
+                  iconColor: AppColors.mint,
+                  title: 'Upcoming Consultation',
+                  subtitle: '${upcomingAppt.doctorName ?? "Pediatrician Checkup"} is confirmed for ${fmtDayDate(upcomingAppt.scheduledAt)} at ${fmtTime(upcomingAppt.scheduledAt)}.',
+                  time: 'Confirmed',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    context.push('/parent/appointments');
+                  },
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const Icon(Icons.notifications_none_rounded, size: 40, color: AppColors.muted),
+                        const SizedBox(height: 8),
+                        Text('No New Notifications', style: AppText.h3.copyWith(fontWeight: FontWeight.w700, color: AppColors.ink)),
+                        const SizedBox(height: 4),
+                        const Text('You will be alerted about upcoming visits and vaccine schedules here.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
-}
 
-class _DentalHeroCard extends ConsumerWidget {
-  const _DentalHeroCard({required this.child});
-
-  final Child child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final plans = ref.watch(dentalPlansProvider(child.id));
-    final pending = plans.where((p) => !p.isCompleted).toList();
-    final title = pending.isNotEmpty ? pending.first.procedureName : 'Teeth All Healthy';
-    final subtitle = pending.isNotEmpty
-        ? 'Scheduled next: ${pending.first.teethInvolved}'
-        : 'Regular 6-month checkup advised';
-
-    return _HeroCardContainer(
-      color: AppColors.navy,
-      tag: 'DENTAL & ORAL CARE',
-      title: title,
-      subtitle: subtitle,
-      icon: Icons.medical_services_rounded,
-      onTap: () => context.go('/parent/visits'),
-    );
-  }
-}
-
-class _DermaHeroCard extends ConsumerWidget {
-  const _DermaHeroCard({required this.child});
-
-  final Child child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sessions = ref.watch(dermaSessionsProvider(child.id));
-    final latest = sessions.firstOrNull;
-    final title = latest != null ? latest.treatmentName : 'Active Skin Care Plan';
-    final subtitle = latest != null
-        ? '${latest.sessionLabel} · Next in 2 weeks'
-        : 'Before/after comparisons & therapy logged';
-
-    return _HeroCardContainer(
-      color: AppColors.navy,
-      tag: 'DERMATOLOGY & SKIN',
-      title: title,
-      subtitle: subtitle,
-      icon: Icons.healing_rounded,
-      onTap: () => context.go('/parent/visits'),
-    );
-  }
-}
-
-class _PregnancyHeroCard extends ConsumerWidget {
-  const _PregnancyHeroCard({required this.child});
-
-  final Child child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final record = ref.watch(pregnancyRecordProvider(child.id));
-    final title = 'Week ${record.gestationalWeeks} · Trimester ${record.trimester}';
-    final subtitle = '${record.daysRemaining} days to EDD (${fmtDate(record.edd)})';
-
-    return _HeroCardContainer(
-      color: AppColors.navy,
-      tag: 'PREGNANCY & MATERNITY',
-      title: title,
-      subtitle: subtitle,
-      icon: Icons.favorite_rounded,
-      onTap: () => context.go('/parent/visits'),
-    );
-  }
-}
-
-class _EyeHeroCard extends ConsumerWidget {
-  const _EyeHeroCard({required this.child});
-
-  final Child child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final rx = ref.watch(refractionProvider(child.id));
-    final title = 'OD ${rx.od.sphere.toStringAsFixed(2)} · OS ${rx.os.sphere.toStringAsFixed(2)}';
-    final subtitle = 'Visual Acuity: 6/6 OU · ${rx.lensTypeAdvice}';
-
-    return _HeroCardContainer(
-      color: AppColors.navy,
-      tag: 'EYE CLINIC & VISION',
-      title: title,
-      subtitle: subtitle,
-      icon: Icons.visibility_rounded,
-      onTap: () => context.go('/parent/visits'),
-    );
-  }
-}
-
-class _PsychiatryHeroCard extends ConsumerWidget {
-  const _PsychiatryHeroCard({required this.child});
-
-  final Child child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final goals = ref.watch(copingGoalsProvider(child.id));
-    final doneCount = goals.where((g) => g.isCompleted).length;
-    final title = 'Mental Wellness Plan';
-    final subtitle = '$doneCount of ${goals.length} Coping Goals completed';
-
-    return _HeroCardContainer(
-      color: AppColors.navy,
-      tag: 'PSYCHIATRY & COUNSELLING',
-      title: title,
-      subtitle: subtitle,
-      icon: Icons.psychology_rounded,
-      onTap: () => context.go('/parent/visits'),
-    );
-  }
-}
-
-class _HeroCardContainer extends StatelessWidget {
-  const _HeroCardContainer({
-    required this.color,
-    required this.tag,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final Color color;
-  final String tag;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
+  Widget _buildNotificationItem({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required String time,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.35),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
           children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(tag,
-                      style: AppText.label.copyWith(color: Colors.white.withValues(alpha: 0.85))),
-                  const SizedBox(height: 6),
-                  Text(title, style: AppText.h1.copyWith(color: Colors.white, fontSize: 22)),
-                  const SizedBox(height: 4),
-                  Text(subtitle,
-                      style: AppText.body.copyWith(color: Colors.white.withValues(alpha: 0.95))),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5), overflow: TextOverflow.ellipsis)),
+                      Text(time, style: const TextStyle(color: AppColors.muted, fontSize: 11)),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
                 ],
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.22),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, color: Colors.white, size: 28),
             ),
           ],
         ),
       ),
     );
   }
-}
-
-class _HomeBody extends ConsumerWidget {
-  const _HomeBody({required this.child});
-
-  final Child child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clinic = ref.watch(childClinicProvider(child.id));
-    final appts = ref.watch(childAppointmentsProvider(child.id)).valueOrNull ?? const <Appointment>[];
-    final records = ref.watch(recordsProvider(child.id)).valueOrNull;
-    final rx = ref.watch(prescriptionsProvider(child.id)).valueOrNull;
-    final unread = ref.watch(unreadFromDoctorProvider(child.id)).valueOrNull ?? 0;
-    final vaccines = ref.watch(vaccinesProvider(child.id)).valueOrNull;
-    final growth = ref.watch(growthProvider(child.id)).valueOrNull;
-
-    final upcoming = appts.where((a) => a.isUpcoming).toList()
-      ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
-    final nextAppt = upcoming.firstOrNull;
-    final latestGrowth = growth?.lastOrNull;
-    final done = vaccines?.where((v) => v.isDone).length ?? 0;
-    final total = vaccines?.length ?? 0;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (clinic.hasValue && clinic.value == null) ...[
-            AppCard(
-              color: AppColors.orangeSoft,
-              borderColor: AppColors.orangeSoft,
-              shadow: false,
-              onTap: () => context.push('/parent/join-clinic'),
-              child: Row(
+  Widget build(BuildContext context) {
+    final selectedChildAsync = ref.watch(selectedChildProvider);
+    final allChildren = ref.watch(childrenProvider).valueOrNull ?? const [];
+    final currentChild = selectedChildAsync.valueOrNull ?? (allChildren.isNotEmpty ? allChildren.first : null);
+    final apptsAsync = currentChild != null ? ref.watch(childAppointmentsProvider(currentChild.id)) : null;
+    final upcomingAppt = apptsAsync?.valueOrNull?.where((a) => a.isUpcoming).firstOrNull;
+    final rxAsync = currentChild != null ? ref.watch(prescriptionsProvider(currentChild.id)) : null;
+    final activeRx = rxAsync?.valueOrNull?.firstOrNull;
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu_rounded, color: AppColors.ink, size: 24),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+        centerTitle: true,
+        title: const BrandMark(size: 38, showName: true, light: false),
+        actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_none_rounded,
+                    color: AppColors.ink, size: 24),
+                onPressed: () => _showNotificationsSheet(context, upcomingAppt),
+              ),
+              if (upcomingAppt != null)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEF4444),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(color: AppColors.primary),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  const IconBadge(icon: Icons.qr_code_scanner_rounded),
-                  const SizedBox(width: 14),
+                  const PediaCareTwinLogo(size: 48),
+                  const SizedBox(height: 10),
+                  Text(
+                    'PediaCare Health',
+                    style: AppText.h2.copyWith(color: Colors.white),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Parent Portal',
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_today_rounded, color: AppColors.primary),
+              title: const Text('Appointments & Visits'),
+              subtitle: const Text('Doctor visits, tokens & bookings'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/parent/appointments');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.medication_outlined, color: AppColors.primary),
+              title: const Text('Medicine Tracker'),
+              subtitle: const Text('Daily schedules & dose reminders'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/parent/med-tracker');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.health_and_safety_outlined, color: AppColors.primary),
+              title: const Text('Symptom Checker & Triage'),
+              subtitle: const Text('Fever & symptom guide'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/parent/symptom-checker');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.track_changes_rounded, color: AppColors.primary),
+              title: const Text('Development Milestones'),
+              subtitle: const Text('CDC / WHO 5-6 Yrs checklist'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/parent/milestones');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.emergency_outlined, color: AppColors.danger),
+              title: const Text('Emergency SOS & First Aid'),
+              subtitle: const Text('Hotlines & life-saving guides'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/parent/emergency');
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.switch_account_rounded, color: AppColors.primary),
+              title: const Text('Switch to Doctor View'),
+              onTap: () {
+                Navigator.pop(context);
+                context.go('/doctor/dashboard');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_add_outlined, color: AppColors.primary),
+              title: const Text('Add Another Child'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/parent/add-child');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout_rounded, color: Colors.red),
+              title: const Text('Sign Out'),
+              onTap: () {
+                Navigator.pop(context);
+                context.go('/choose-role');
+              },
+            ),
+          ],
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Greeting Section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Connect your clinic', style: AppText.h3),
-                        const SizedBox(height: 2),
-                        Text('Scan the clinic QR to book visits and chat with the doctor.',
-                            style: AppText.small),
+                        Text(
+                          'Hello! 👋',
+                          style: AppText.h1.copyWith(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.ink,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Your children's health at a glance.",
+                          style: AppText.muted.copyWith(fontSize: 13.5),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+                  const SizedBox(width: 12),
+                  // Parent profile avatar (Enlarged 3D Illustration)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      color: const Color(0xFFE0F2FE),
+                      child: Image.asset(
+                        'assets/images/parent_family.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          Row(
-            children: [
-              Expanded(
-                child: _QuickTile(
-                  icon: Icons.event_rounded,
-                  label: 'Appointment',
-                  value: nextAppt == null ? 'Book now' : fmtDayDate(nextAppt.scheduledAt),
-                  hint: nextAppt == null ? null : fmtTime(nextAppt.scheduledAt),
-                  onTap: () => context.go('/parent/visits'),
+              const SizedBox(height: 18),
+
+              // Child Selector Card (Dynamic) - Soft Lavender Tint, Rounded, No rigid border
+              if (currentChild == null)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => context.push('/parent/add-child'),
+                    borderRadius: BorderRadius.circular(18),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.lavender.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Add Your Child Profile', style: AppText.h3.copyWith(fontWeight: FontWeight.w800, fontSize: 15)),
+                                const SizedBox(height: 2),
+                                const Text('Track vaccinations, growth charts & digital prescriptions', style: TextStyle(color: AppColors.muted, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.primary, size: 14),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showChildPicker(context),
+                    borderRadius: BorderRadius.circular(18),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.lavender.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.asset(
+                              'assets/images/avatar_child.png',
+                              width: 52,
+                              height: 52,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        currentChild.name,
+                                        style: AppText.h3.copyWith(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 16,
+                                          color: AppColors.ink,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (currentChild.bloodGroup != null) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          currentChild.bloodGroup!,
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${currentChild.age} • ${currentChild.gender[0].toUpperCase()}${currentChild.gender.substring(1)}${currentChild.weightKg != null ? ' • ${currentChild.weightKg} kg' : ''}',
+                                  style: AppText.muted.copyWith(fontSize: 12.5),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 14),
+
+              // Emergency SOS Quick Access Pill
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => context.push('/parent/emergency'),
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFFECACA)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFDC2626),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.emergency_rounded, color: Colors.white, size: 14),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Emergency SOS & Pediatric First Aid',
+                            style: TextStyle(
+                              color: Color(0xFFB91C1C),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFDC2626), size: 13),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickTile(
-                  icon: Icons.chat_bubble_rounded,
-                  label: 'Doctor chat',
-                  value: unread > 0 ? '$unread new' : 'Message',
-                  highlight: unread > 0,
-                  onTap: () => context.go('/parent/chat'),
-                ),
+              const SizedBox(height: 18),
+
+              // Quick Actions Grid (3x2) - 3D PNG Icons Fill The Space Without Rigid Card Elements
+              GridView.count(
+                crossAxisCount: 3,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 18,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.80,
+                children: [
+                  _QuickActionTile(
+                    title: 'Book\nAppointment',
+                    imageAsset: 'assets/images/book_appointment.png',
+                    onTap: () => context.push('/parent/book'),
+                  ),
+                  _QuickActionTile(
+                    title: 'Medicine\nTracker',
+                    imageAsset: 'assets/images/prescription_badge.png',
+                    onTap: () => context.push('/parent/med-tracker'),
+                  ),
+                  _QuickActionTile(
+                    title: 'Symptom\nChecker',
+                    imageAsset: 'assets/images/teleconsult_badge.png',
+                    onTap: () => context.push('/parent/symptom-checker'),
+                  ),
+                  _QuickActionTile(
+                    title: 'Vaccination\nTracker',
+                    imageAsset: 'assets/images/vaccination_badge.png',
+                    onTap: () => context.push('/parent/vaccines'),
+                  ),
+                  _QuickActionTile(
+                    title: 'Growth &\nMilestones',
+                    imageAsset: 'assets/images/growth_badge.png',
+                    onTap: () => context.push('/parent/milestones'),
+                  ),
+                  _QuickActionTile(
+                    title: 'Emergency\nHotline',
+                    imageAsset: 'assets/images/confirmed_badge.png',
+                    onTap: () => context.push('/parent/emergency'),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _QuickTile(
-                  icon: Icons.folder_rounded,
-                  label: 'Reports',
-                  value: records == null ? '-' : '${records.length} file${records.length == 1 ? '' : 's'}',
-                  onTap: () => context.push('/parent/records'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickTile(
-                  icon: Icons.receipt_long_rounded,
-                  label: 'Prescriptions',
-                  value: rx == null ? '-' : '${rx.length} issued',
-                  onTap: () => context.go('/parent/visits'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SectionHeader('Vaccination', action: 'View all', onAction: () => context.go('/parent/vaccines')),
-          AppCard(
-            onTap: () => context.go('/parent/vaccines'),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                        child: Text(
-                            total == 0 ? 'Schedule loading…' : '$done of $total vaccines done',
-                            style: AppText.h3)),
-                    Text(total == 0 ? '' : '${(done * 100 / total).round()}%',
-                        style: AppText.bodyBold.copyWith(color: AppColors.orange)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                      value: total == 0 ? 0 : done / total, minHeight: 10),
-                ),
-              ],
-            ),
-          ),
-          SectionHeader('Growth', action: 'Chart', onAction: () => context.go('/parent/growth')),
-          AppCard(
-            onTap: () => context.go('/parent/growth'),
-            child: latestGrowth == null
-                ? Row(
+              const SizedBox(height: 20),
+
+              // Upcoming Appointment Banner (Clickable to Parent Appointments)
+              if (upcomingAppt != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFEFF6FF), Color(0xFFF0FDF4)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
                     children: [
-                      const IconBadge(icon: Icons.monitor_weight_outlined),
-                      const SizedBox(width: 14),
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.calendar_month_rounded, color: AppColors.primary, size: 22),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
-                          child: Text('Add the first weight & height measurement',
-                              style: AppText.body)),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      _Stat('Weight', latestGrowth.weightKg, 'kg'),
-                      _Stat('Height', latestGrowth.heightCm, 'cm'),
-                      _Stat('Head', latestGrowth.headCm, 'cm'),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'Upcoming Visit',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                if (upcomingAppt.tokenNo != null) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Token #${upcomingAppt.tokenNo}',
+                                      style: const TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.w800),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              upcomingAppt.doctorName ?? 'Pediatrician Checkup',
+                              style: AppText.h3.copyWith(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            Text(
+                              '${fmtDayDate(upcomingAppt.scheduledAt)} • ${fmtTime(upcomingAppt.scheduledAt)}',
+                              style: AppText.muted.copyWith(fontSize: 11.5),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => context.push('/parent/appointments'),
+                        child: const Text('View', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
+                      ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 14),
+              ],
+
+              // Active Dose Reminder Card (Only when active prescription exists)
+              if (activeRx != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.lavender.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.medication_rounded, color: AppColors.primary, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Active Prescription',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              activeRx.diagnosis?.isNotEmpty == true ? activeRx.diagnosis! : 'Doctor Prescription',
+                              style: AppText.h3.copyWith(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.ink,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'Prescribed by ${activeRx.doctorName ?? "Pediatrician"}',
+                              style: AppText.muted.copyWith(fontSize: 11.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => context.push('/parent/med-tracker'),
+                        child: const Text('Track', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
+
+              // Next Vaccination Banner Card with 3D Vaccine Asset (Clickable to Vaccine Tracker)
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => context.push('/parent/vaccines'),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.lavender, AppColors.mintSoft],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text(
+                                    'Immunization',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.mint,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.mint.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'Digital Card',
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                currentChild != null ? 'Vaccine Schedule' : 'Immunization Tracker',
+                                style: AppText.h2.copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                currentChild != null
+                                    ? 'Tap to check ${currentChild.name}\'s WHO / IAP vaccine milestones'
+                                    : 'Add a child profile to track vaccines & due dates',
+                                style: AppText.muted.copyWith(fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // 3D Syringe & Vaccine graphic (Enlarged)
+                        Image.asset(
+                          'assets/images/vaccination_badge.png',
+                          width: 76,
+                          height: 76,
+                          fit: BoxFit.contain,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
           ),
-        ],
+        ),
       ),
+      bottomNavigationBar: const ParentBottomNav(currentIndex: 0),
     );
   }
 }
 
-class _Stat extends StatelessWidget {
-  const _Stat(this.label, this.value, this.unit);
-
-  final String label;
-  final double? value;
-  final String unit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(label, style: AppText.small),
-          const SizedBox(height: 4),
-          Text(value == null ? '-' : numFmt(value!), style: AppText.h1),
-          Text(unit, style: AppText.small),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickTile extends StatelessWidget {
-  const _QuickTile({
-    required this.icon,
-    required this.label,
-    required this.value,
+class _QuickActionTile extends StatelessWidget {
+  const _QuickActionTile({
+    required this.title,
+    required this.imageAsset,
     required this.onTap,
-    this.hint,
-    this.highlight = false,
   });
 
-  final IconData icon;
-  final String label;
-  final String value;
-  final String? hint;
-  final bool highlight;
+  final String title;
+  final String imageAsset;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          IconBadge(icon: icon, size: 40),
-          const SizedBox(height: 14),
-          Text(label, style: AppText.small),
-          const SizedBox(height: 2),
-          Text(value,
-              style: AppText.h3.copyWith(color: highlight ? AppColors.orange : AppColors.ink),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis),
-          if (hint != null) Text(hint!, style: AppText.small),
-        ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 3D PNG Icon filling the space prominently (Enlarged)
+              Image.asset(
+                imageAsset,
+                width: 68,
+                height: 68,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 6),
+              Flexible(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.bodyBold.copyWith(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

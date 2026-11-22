@@ -496,9 +496,9 @@ class _LogSessionSheet extends StatefulWidget {
 }
 
 class _LogSessionSheetState extends State<_LogSessionSheet> {
-  final _treatmentCtrl = TextEditingController(text: 'Chemical Peel (Salicylic 20%)');
-  final _sessionNumCtrl = TextEditingController(text: '1');
-  final _totalSessionsCtrl = TextEditingController(text: '6');
+  final _treatmentCtrl = TextEditingController();
+  final _sessionNumCtrl = TextEditingController();
+  final _totalSessionsCtrl = TextEditingController();
   final _energyCtrl = TextEditingController();
   final _reactionCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();

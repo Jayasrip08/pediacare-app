@@ -14,17 +14,12 @@ class DoctorShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final unread = ref.watch(doctorStatsProvider).valueOrNull?.unreadMessages ?? 0;
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: Colors.white,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 680),
           child: Container(
-            decoration: const BoxDecoration(
-              color: AppColors.bg,
-              border: Border.symmetric(
-                vertical: BorderSide(color: AppColors.line),
-              ),
-            ),
+            color: Colors.white,
             child: shell,
           ),
         ),
@@ -33,12 +28,7 @@ class DoctorShell extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 680),
           child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border.symmetric(
-                vertical: BorderSide(color: AppColors.line),
-              ),
-            ),
+            color: Colors.white,
             child: NavigationBar(
               selectedIndex: shell.currentIndex,
               onDestinationSelected: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),

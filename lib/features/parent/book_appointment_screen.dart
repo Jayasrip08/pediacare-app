@@ -1,244 +1,209 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/theme.dart';
-import '../../core/utils.dart';
-import '../../core/widgets.dart';
-import '../../models/models.dart';
-import '../../providers.dart';
 
-final _takenSlotsProvider = FutureProvider.autoDispose.family<List<DateTime>, (String, DateTime)>(
-  (ref, key) => ref.watch(appointmentRepositoryProvider).takenSlots(key.$1, key.$2),
-);
-
-List<DateTime> _slotsFor(Clinic c, DateTime day) {
-  final open = parseHm(c.openTime);
-  final close = parseHm(c.closeTime);
-  var t = DateTime(day.year, day.month, day.day, open.hour, open.minute);
-  final end = DateTime(day.year, day.month, day.day, close.hour, close.minute);
-  final step = Duration(minutes: c.slotMinutes);
-  final out = <DateTime>[];
-  while (!t.add(step).isAfter(end)) {
-    out.add(t);
-    t = t.add(step);
-  }
-  return out;
-}
-
-const _reasons = ['Fever', 'Cough / cold', 'Vaccination', 'Check-up', 'Stomach upset', 'Other'];
-
-class BookAppointmentScreen extends ConsumerStatefulWidget {
+class BookAppointmentScreen extends StatefulWidget {
   const BookAppointmentScreen({super.key});
 
   @override
-  ConsumerState<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
+  State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
 }
 
-class _BookAppointmentScreenState extends ConsumerState<BookAppointmentScreen> {
-  late DateTime _day = dateOnly(DateTime.now());
-  DateTime? _slot;
-  String? _reason;
-  final _symptoms = TextEditingController();
-  bool _saving = false;
+class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
+  String _selectedDept = 'Pediatrics';
 
-  @override
-  void dispose() {
-    _symptoms.dispose();
-    super.dispose();
-  }
-
-  Future<void> _book(Child child, Clinic clinic) async {
-    if (_slot == null) {
-      showToast(context, 'Please choose a time slot', error: true);
-      return;
-    }
-    final uid = ref.read(userIdProvider);
-    if (uid == null) return;
-    setState(() => _saving = true);
-    try {
-      await ref.read(appointmentRepositoryProvider).book(
-            clinicId: clinic.id,
-            childId: child.id,
-            parentId: uid,
-            scheduledAt: _slot!,
-            reason: _reason,
-            symptoms: _symptoms.text,
-          );
-      ref.invalidate(childAppointmentsProvider(child.id));
-      if (mounted) {
-        context.pop();
-        showToast(context, 'Appointment booked for ${fmtTime(_slot!)}');
-      }
-    } on PostgrestException catch (e) {
-      if (mounted) {
-        final taken = e.code == '23505';
-        showToast(context, taken ? 'That slot was just taken. Please pick another.' : e.message,
-            error: true);
-        if (taken) {
-          ref.invalidate(_takenSlotsProvider((clinic.id, _day)));
-          setState(() => _slot = null);
-        }
-      }
-    } catch (e) {
-      if (mounted) showToast(context, errorMessage(e), error: true);
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
+  final List<_DepartmentItem> _departments = const [
+    _DepartmentItem(
+      title: 'Pediatrics',
+      subtitle: 'General child health & wellness',
+      icon: Icons.child_care_rounded,
+      iconColor: AppColors.primary,
+      bgColor: AppColors.lavender,
+    ),
+    _DepartmentItem(
+      title: 'Pediatric Cardiology',
+      subtitle: 'Heart care for children',
+      icon: Icons.favorite_rounded,
+      iconColor: Color(0xFFEC4899),
+      bgColor: Color(0xFFFCE7F3),
+    ),
+    _DepartmentItem(
+      title: 'Pediatric Neurology',
+      subtitle: 'Brain & nervous system care',
+      icon: Icons.psychology_rounded,
+      iconColor: Color(0xFF8B5CF6),
+      bgColor: AppColors.lavender,
+    ),
+    _DepartmentItem(
+      title: 'Pediatric Orthopedics',
+      subtitle: 'Bone, joint & growth concerns',
+      icon: Icons.healing_rounded,
+      iconColor: Color(0xFFF59E0B),
+      bgColor: Color(0xFFFEF3C7),
+    ),
+    _DepartmentItem(
+      title: 'Pediatric ENT',
+      subtitle: 'Ear, nose & throat care',
+      icon: Icons.add_circle_outline_rounded,
+      iconColor: AppColors.mint,
+      bgColor: AppColors.mintSoft,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final child = ref.watch(selectedChildProvider).valueOrNull;
-    final clinicAsync =
-        child == null ? const AsyncValue<Clinic?>.data(null) : ref.watch(childClinicProvider(child.id));
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Book appointment')),
-      body: child == null
-          ? const ErrorView(message: 'No child selected')
-          : AsyncValueView<Clinic?>(
-              value: clinicAsync,
-              data: (clinic) {
-                if (clinic == null) {
-                  return EmptyState(
-                    icon: Icons.qr_code_scanner_rounded,
-                    title: 'Connect your clinic first',
-                    actionLabel: 'Scan clinic QR',
-                    onAction: () => context.pushReplacement('/parent/join-clinic'),
-                  );
-                }
-                final slots = _slotsFor(clinic, _day);
-                final taken = ref.watch(_takenSlotsProvider((clinic.id, _day))).valueOrNull ?? const [];
-                final takenMs = taken.map((e) => e.millisecondsSinceEpoch).toSet();
-                final now = DateTime.now();
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          'Book Appointment',
+          style: AppText.h2.copyWith(
+            fontWeight: FontWeight.w800,
+            color: AppColors.ink,
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          children: [
+            // Dropdown selector card
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.line.withValues(alpha: 0.7)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Select Department',
+                    style: AppText.bodyBold.copyWith(
+                      color: AppColors.ink,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.muted,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
 
-                return ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-                  children: [
-                    AppCard(
+            // Department items
+            ..._departments.map((dept) {
+              final isSelected = dept.title == _selectedDept;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      setState(() => _selectedDept = dept.title);
+                      context.push('/parent/select-doctor?dept=${Uri.encodeComponent(dept.title)}');
+                    },
+                    borderRadius: BorderRadius.circular(18),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: isSelected ? AppColors.primary : AppColors.line.withValues(alpha: 0.7),
+                          width: isSelected ? 1.5 : 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
                       child: Row(
                         children: [
-                          const IconBadge(icon: Icons.local_hospital_rounded),
-                          const SizedBox(width: 14),
+                          // Round Icon Badge
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: dept.bgColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              dept.icon,
+                              color: dept.iconColor,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+
+                          // Titles
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(clinic.name, style: AppText.h3),
-                                Text('For ${child.name} · ${clinic.openTime}–${clinic.closeTime}',
-                                    style: AppText.small),
+                                Text(
+                                  dept.title,
+                                  style: AppText.h3.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  dept.subtitle,
+                                  style: AppText.muted.copyWith(fontSize: 12.5),
+                                ),
                               ],
                             ),
+                          ),
+
+                          // Chevron
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: AppColors.muted,
+                            size: 22,
                           ),
                         ],
                       ),
                     ),
-                    const SectionHeader('Choose a day'),
-                    SizedBox(
-                      height: 78,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: 14,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (_, i) {
-                          final d = dateOnly(now).add(Duration(days: i));
-                          final sel = d == _day;
-                          return GestureDetector(
-                            onTap: () => setState(() {
-                              _day = d;
-                              _slot = null;
-                            }),
-                            child: Container(
-                              width: 60,
-                              decoration: BoxDecoration(
-                                color: sel ? AppColors.navy : Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: sel ? AppColors.navy : AppColors.line),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(fmtDayDate(d).split(',').first,
-                                      style: AppText.small
-                                          .copyWith(color: sel ? Colors.white70 : AppColors.muted)),
-                                  const SizedBox(height: 4),
-                                  Text('${d.day}',
-                                      style: AppText.h2
-                                          .copyWith(color: sel ? Colors.white : AppColors.ink)),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SectionHeader('Choose a time'),
-                    if (slots.isEmpty)
-                      Text('No slots available on this day.', style: AppText.muted)
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final s in slots)
-                            Builder(builder: (_) {
-                              final unavailable =
-                                  takenMs.contains(s.millisecondsSinceEpoch) || s.isBefore(now);
-                              final sel = _slot == s;
-                              return ChoiceChip(
-                                label: Text(fmtTime(s)),
-                                selected: sel,
-                                showCheckmark: false,
-                                onSelected: unavailable ? null : (_) => setState(() => _slot = s),
-                                selectedColor: AppColors.orange,
-                                backgroundColor: Colors.white,
-                                disabledColor: const Color(0xFFEEF0F6),
-                                side: BorderSide(
-                                    color: sel ? AppColors.orange : AppColors.line),
-                                labelStyle: AppText.bodyBold.copyWith(
-                                  fontSize: 13,
-                                  color: unavailable
-                                      ? AppColors.muted.withValues(alpha: 0.6)
-                                      : (sel ? Colors.white : AppColors.ink),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
-                              );
-                            }),
-                        ],
-                      ),
-                    const SectionHeader('Reason for visit'),
-                    ChoiceGroup<String>(
-                      options: _reasons,
-                      selected: _reason,
-                      onChanged: (v) => setState(() => _reason = v),
-                      labelOf: (v) => v,
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _symptoms,
-                      maxLines: 3,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: const InputDecoration(
-                        labelText: 'Symptoms / notes for the doctor (optional)',
-                        alignLabelWithHint: true,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    AppButton(
-                      label: _slot == null
-                          ? 'Select a time'
-                          : 'Confirm · ${fmtDayDate(_slot!)}, ${fmtTime(_slot!)}',
-                      kind: AppButtonKind.accent,
-                      loading: _saving,
-                      onPressed: _slot == null ? null : () => _book(child, clinic),
-                    ),
-                  ],
-                );
-              },
-            ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
     );
   }
+}
+
+class _DepartmentItem {
+  const _DepartmentItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.iconColor,
+    required this.bgColor,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color iconColor;
+  final Color bgColor;
 }

@@ -43,6 +43,7 @@ class Clinic {
     this.address,
     this.phone,
     this.department = ClinicDepartment.pediatrics,
+    this.availableDepartments = const [ClinicDepartment.pediatrics],
   });
 
   final String id;
@@ -52,6 +53,7 @@ class Clinic {
   final String? address;
   final String? phone;
   final ClinicDepartment department;
+  final List<ClinicDepartment> availableDepartments;
 
   /// "HH:mm" 24h
   final String openTime;
@@ -66,6 +68,7 @@ class Clinic {
     String? closeTime,
     int? slotMinutes,
     ClinicDepartment? department,
+    List<ClinicDepartment>? availableDepartments,
   }) =>
       Clinic(
         id: id,
@@ -78,19 +81,140 @@ class Clinic {
         address: address ?? this.address,
         phone: phone ?? this.phone,
         department: department ?? this.department,
+        availableDepartments: availableDepartments ?? this.availableDepartments,
       );
 
-  factory Clinic.fromJson(Map<String, dynamic> j) => Clinic(
-        id: j['id'] as String,
-        doctorId: j['doctor_id'] as String,
-        name: j['name'] as String,
-        joinCode: j['join_code'] as String,
-        address: j['address'] as String?,
-        phone: j['phone'] as String?,
-        openTime: (j['open_time'] as String).substring(0, 5),
-        closeTime: (j['close_time'] as String).substring(0, 5),
-        slotMinutes: (j['slot_minutes'] as num).toInt(),
-        department: ClinicDepartment.fromKey(j['department'] as String?),
+  factory Clinic.fromJson(Map<String, dynamic> j) {
+    final deptList = (j['available_departments'] as List<dynamic>?)
+            ?.map((e) => ClinicDepartment.fromKey(e as String?))
+            .toList() ??
+        [ClinicDepartment.fromKey(j['department'] as String?)];
+    return Clinic(
+      id: j['id'] as String,
+      doctorId: j['doctor_id'] as String,
+      name: j['name'] as String,
+      joinCode: j['join_code'] as String,
+      address: j['address'] as String?,
+      phone: j['phone'] as String?,
+      openTime: (j['open_time'] as String).substring(0, 5),
+      closeTime: (j['close_time'] as String).substring(0, 5),
+      slotMinutes: (j['slot_minutes'] as num).toInt(),
+      department: ClinicDepartment.fromKey(j['department'] as String?),
+      availableDepartments: deptList,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Doctor Account & RBAC
+// ---------------------------------------------------------------------------
+class DoctorAccount {
+  const DoctorAccount({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.pin,
+    required this.specialty,
+    required this.regNo,
+    required this.phone,
+    this.avatarPath = 'assets/images/avatar_doctor.png',
+    this.clinicId,
+  });
+
+  final String id;
+  final String name;
+  final String email;
+  final String pin;
+  final String specialty;
+  final String regNo;
+  final String phone;
+  final String avatarPath;
+  final String? clinicId;
+
+  DoctorAccount copyWith({
+    String? name,
+    String? email,
+    String? pin,
+    String? specialty,
+    String? regNo,
+    String? phone,
+    String? avatarPath,
+    String? clinicId,
+  }) =>
+      DoctorAccount(
+        id: id,
+        name: name ?? this.name,
+        email: email ?? this.email,
+        pin: pin ?? this.pin,
+        specialty: specialty ?? this.specialty,
+        regNo: regNo ?? this.regNo,
+        phone: phone ?? this.phone,
+        avatarPath: avatarPath ?? this.avatarPath,
+        clinicId: clinicId ?? this.clinicId,
+      );
+}
+
+class DoctorPatient {
+  const DoctorPatient({
+    required this.id,
+    required this.name,
+    required this.ageDisplay,
+    required this.condition,
+    required this.time,
+    required this.avatarPath,
+    required this.gender,
+    this.bloodGroup,
+    this.weightKg,
+    this.parentName,
+    this.parentPhone,
+    this.lastVisit,
+    this.status = 'Scheduled',
+  });
+
+  final String id;
+  final String name;
+  final String ageDisplay;
+  final String condition;
+  final String time;
+  final String avatarPath;
+  final String gender;
+  final String? bloodGroup;
+  final double? weightKg;
+  final String? parentName;
+  final String? parentPhone;
+  final DateTime? lastVisit;
+  final String status;
+
+  String get ageGender => '$ageDisplay • $gender';
+
+  DoctorPatient copyWith({
+    String? name,
+    String? ageDisplay,
+    String? condition,
+    String? time,
+    String? avatarPath,
+    String? gender,
+    String? bloodGroup,
+    double? weightKg,
+    String? parentName,
+    String? parentPhone,
+    DateTime? lastVisit,
+    String? status,
+  }) =>
+      DoctorPatient(
+        id: id,
+        name: name ?? this.name,
+        ageDisplay: ageDisplay ?? this.ageDisplay,
+        condition: condition ?? this.condition,
+        time: time ?? this.time,
+        avatarPath: avatarPath ?? this.avatarPath,
+        gender: gender ?? this.gender,
+        bloodGroup: bloodGroup ?? this.bloodGroup,
+        weightKg: weightKg ?? this.weightKg,
+        parentName: parentName ?? this.parentName,
+        parentPhone: parentPhone ?? this.parentPhone,
+        lastVisit: lastVisit ?? this.lastVisit,
+        status: status ?? this.status,
       );
 }
 
@@ -108,6 +232,12 @@ class Child {
     this.allergies,
     this.parentName,
     this.parentPhone,
+    this.weightKg,
+    this.heightCm,
+    this.birthWeightKg,
+    this.chronicConditions,
+    this.emergencyContact,
+    this.pediatrician,
   });
 
   final String id;
@@ -119,9 +249,50 @@ class Child {
   final String? allergies;
   final String? parentName;
   final String? parentPhone;
+  final double? weightKg;
+  final double? heightCm;
+  final double? birthWeightKg;
+  final String? chronicConditions;
+  final String? emergencyContact;
+  final String? pediatrician;
 
   String get age => ageLabel(dob);
   int get ageMonths => ageInMonths(dob);
+
+  Child copyWith({
+    String? id,
+    String? parentId,
+    String? name,
+    DateTime? dob,
+    String? gender,
+    String? bloodGroup,
+    String? allergies,
+    String? parentName,
+    String? parentPhone,
+    double? weightKg,
+    double? heightCm,
+    double? birthWeightKg,
+    String? chronicConditions,
+    String? emergencyContact,
+    String? pediatrician,
+  }) =>
+      Child(
+        id: id ?? this.id,
+        parentId: parentId ?? this.parentId,
+        name: name ?? this.name,
+        dob: dob ?? this.dob,
+        gender: gender ?? this.gender,
+        bloodGroup: bloodGroup ?? this.bloodGroup,
+        allergies: allergies ?? this.allergies,
+        parentName: parentName ?? this.parentName,
+        parentPhone: parentPhone ?? this.parentPhone,
+        weightKg: weightKg ?? this.weightKg,
+        heightCm: heightCm ?? this.heightCm,
+        birthWeightKg: birthWeightKg ?? this.birthWeightKg,
+        chronicConditions: chronicConditions ?? this.chronicConditions,
+        emergencyContact: emergencyContact ?? this.emergencyContact,
+        pediatrician: pediatrician ?? this.pediatrician,
+      );
 
   factory Child.fromJson(Map<String, dynamic> j) {
     final p = j['profiles'];
@@ -135,6 +306,12 @@ class Child {
       allergies: j['allergies'] as String?,
       parentName: p is Map ? p['full_name'] as String? : null,
       parentPhone: p is Map ? p['phone'] as String? : null,
+      weightKg: _num(j['weight_kg']),
+      heightCm: _num(j['height_cm']),
+      birthWeightKg: _num(j['birth_weight_kg']),
+      chronicConditions: j['chronic_conditions'] as String?,
+      emergencyContact: j['emergency_contact'] as String?,
+      pediatrician: j['pediatrician'] as String?,
     );
   }
 }
@@ -149,6 +326,8 @@ class ChildVaccine {
     required this.status,
     this.protectsAgainst,
     this.givenOn,
+    this.batchNumber,
+    this.clinic,
   });
 
   final String id;
@@ -159,11 +338,38 @@ class ChildVaccine {
   final DateTime dueDate;
   final String status; // pending | done | skipped
   final DateTime? givenOn;
+  final String? batchNumber;
+  final String? clinic;
 
   bool get isDone => status == 'done';
   int get daysToDue => dateOnly(dueDate).difference(dateOnly(DateTime.now())).inDays;
   bool get isOverdue => status == 'pending' && daysToDue < 0;
-  bool get isDueSoon => status == 'pending' && daysToDue >= 0 && daysToDue <= 14;
+  bool get isDueSoon => status == 'pending' && daysToDue >= 0 && daysToDue <= 30;
+
+  ChildVaccine copyWith({
+    String? id,
+    String? childId,
+    String? name,
+    String? ageLabel,
+    String? protectsAgainst,
+    DateTime? dueDate,
+    String? status,
+    DateTime? givenOn,
+    String? batchNumber,
+    String? clinic,
+  }) =>
+      ChildVaccine(
+        id: id ?? this.id,
+        childId: childId ?? this.childId,
+        name: name ?? this.name,
+        ageLabel: ageLabel ?? this.ageLabel,
+        protectsAgainst: protectsAgainst ?? this.protectsAgainst,
+        dueDate: dueDate ?? this.dueDate,
+        status: status ?? this.status,
+        givenOn: givenOn ?? this.givenOn,
+        batchNumber: batchNumber ?? this.batchNumber,
+        clinic: clinic ?? this.clinic,
+      );
 
   factory ChildVaccine.fromJson(Map<String, dynamic> j) {
     final t = (j['vaccine_templates'] as Map?) ?? const {};
@@ -176,6 +382,8 @@ class ChildVaccine {
       dueDate: _day(j['due_date']),
       status: j['status'] as String,
       givenOn: j['given_on'] == null ? null : _day(j['given_on']),
+      batchNumber: j['batch_number'] as String?,
+      clinic: j['clinic'] as String?,
     );
   }
 }
@@ -196,6 +404,23 @@ class GrowthRecord {
   final double? weightKg;
   final double? heightCm;
   final double? headCm;
+
+  GrowthRecord copyWith({
+    String? id,
+    String? childId,
+    DateTime? measuredOn,
+    double? weightKg,
+    double? heightCm,
+    double? headCm,
+  }) =>
+      GrowthRecord(
+        id: id ?? this.id,
+        childId: childId ?? this.childId,
+        measuredOn: measuredOn ?? this.measuredOn,
+        weightKg: weightKg ?? this.weightKg,
+        heightCm: heightCm ?? this.heightCm,
+        headCm: headCm ?? this.headCm,
+      );
 
   factory GrowthRecord.fromJson(Map<String, dynamic> j) => GrowthRecord(
         id: j['id'] as String,
@@ -223,6 +448,9 @@ class Appointment {
     this.childName,
     this.childDob,
     this.clinicName,
+    this.doctorName,
+    this.specialty,
+    this.doctorAvatar,
   });
 
   final String id;
@@ -236,10 +464,47 @@ class Appointment {
   final String? childName;
   final DateTime? childDob;
   final String? clinicName;
+  final String? doctorName;
+  final String? specialty;
+  final String? doctorAvatar;
 
   bool get isActive => status == 'booked' || status == 'in_consult';
   bool get isUpcoming =>
       isActive && !dateOnly(scheduledAt).isBefore(dateOnly(DateTime.now()));
+
+  Appointment copyWith({
+    String? id,
+    String? clinicId,
+    String? childId,
+    DateTime? scheduledAt,
+    String? status,
+    int? tokenNo,
+    String? reason,
+    String? symptoms,
+    String? childName,
+    DateTime? childDob,
+    String? clinicName,
+    String? doctorName,
+    String? specialty,
+    String? doctorAvatar,
+  }) {
+    return Appointment(
+      id: id ?? this.id,
+      clinicId: clinicId ?? this.clinicId,
+      childId: childId ?? this.childId,
+      scheduledAt: scheduledAt ?? this.scheduledAt,
+      status: status ?? this.status,
+      tokenNo: tokenNo ?? this.tokenNo,
+      reason: reason ?? this.reason,
+      symptoms: symptoms ?? this.symptoms,
+      childName: childName ?? this.childName,
+      childDob: childDob ?? this.childDob,
+      clinicName: clinicName ?? this.clinicName,
+      doctorName: doctorName ?? this.doctorName,
+      specialty: specialty ?? this.specialty,
+      doctorAvatar: doctorAvatar ?? this.doctorAvatar,
+    );
+  }
 
   factory Appointment.fromJson(Map<String, dynamic> j) {
     final c = j['children'];
@@ -256,6 +521,9 @@ class Appointment {
       childName: c is Map ? c['name'] as String? : null,
       childDob: c is Map && c['dob'] != null ? _day(c['dob']) : null,
       clinicName: cl is Map ? cl['name'] as String? : null,
+      doctorName: j['doctor_name'] as String?,
+      specialty: j['specialty'] as String?,
+      doctorAvatar: j['doctor_avatar'] as String?,
     );
   }
 }

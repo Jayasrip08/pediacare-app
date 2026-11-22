@@ -528,46 +528,185 @@ class ChoiceGroup<T> extends StatelessWidget {
 // Brand
 // ---------------------------------------------------------------------------
 class BrandMark extends StatelessWidget {
-  const BrandMark({super.key, this.size = 56, this.showName = true, this.light = true});
+  const BrandMark({
+    super.key,
+    this.size = 38,
+    this.showName = true,
+    this.light = false,
+    this.horizontal = true,
+  });
 
   final double size;
   final bool showName;
   final bool light;
+  final bool horizontal;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: AppColors.orange,
-            borderRadius: BorderRadius.circular(size * 0.3),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.orange.withValues(alpha: 0.4),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Icon(Icons.medical_services_rounded, color: Colors.white, size: size * 0.54),
-        ),
-        if (showName) ...[
-          SizedBox(width: size * 0.28),
-          Text(
-            'PediaCare',
-            style: AppText.h1.copyWith(
-              fontSize: size * 0.5,
-              color: light ? Colors.white : AppColors.navy,
-            ),
-          ),
-        ],
-      ],
+    if (!showName) {
+      return Image.asset(
+        'assets/images/logo_icon.png',
+        height: size,
+        fit: BoxFit.contain,
+      );
+    }
+    if (horizontal) {
+      return Image.asset(
+        'assets/images/logo_horizontal.png',
+        height: size,
+        fit: BoxFit.contain,
+      );
+    }
+    return Image.asset(
+      'assets/images/logo.png',
+      height: size,
+      fit: BoxFit.contain,
     );
   }
+}
+
+/// The official two smiling child faces icon for PediaCare
+class PediaCareTwinLogo extends StatelessWidget {
+  const PediaCareTwinLogo({super.key, this.size = 54});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/images/logo_icon.png',
+      height: size,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => SizedBox(
+        width: size * 1.8,
+        height: size,
+        child: CustomPaint(
+          size: Size(size * 1.8, size),
+          painter: _TwinFacesPainter(),
+        ),
+      ),
+    );
+  }
+}
+
+class _TwinFacesPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scale = size.height / 100.0;
+    final strokePaint = Paint()
+      ..color = AppColors.primaryDark
+      ..strokeWidth = 3.5 * scale
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final whiteStroke = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 3.0 * scale
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final whiteFill = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    // 1. Left Child Face (Darker Brand Blue #2563EB)
+    final c1Center = Offset(36 * scale, 48 * scale);
+    final c1Radius = 32 * scale;
+    final c1Fill = Paint()
+      ..color = const Color(0xFF2563EB)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(c1Center, c1Radius, c1Fill);
+
+    // Hair tuft
+    final hairPath = Path();
+    hairPath.moveTo(30 * scale, 18 * scale);
+    hairPath.quadraticBezierTo(36 * scale, 10 * scale, 42 * scale, 16 * scale);
+    hairPath.quadraticBezierTo(46 * scale, 12 * scale, 50 * scale, 20 * scale);
+    canvas.drawPath(hairPath, whiteStroke);
+
+    // Left child eyes
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(26 * scale, 44 * scale),
+        width: 7 * scale,
+        height: 10 * scale,
+      ),
+      whiteFill,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(46 * scale, 44 * scale),
+        width: 7 * scale,
+        height: 10 * scale,
+      ),
+      whiteFill,
+    );
+
+    // Left child rosy cheeks
+    final cheek1Fill = Paint()
+      ..color = const Color(0xFF93C5FD).withValues(alpha: 0.8)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(17 * scale, 52 * scale), 5 * scale, cheek1Fill);
+    canvas.drawCircle(Offset(55 * scale, 52 * scale), 5 * scale, cheek1Fill);
+
+    // Left child smile
+    final smile1Path = Path();
+    smile1Path.moveTo(27 * scale, 54 * scale);
+    smile1Path.quadraticBezierTo(
+      36 * scale,
+      64 * scale,
+      45 * scale,
+      54 * scale,
+    );
+    canvas.drawPath(smile1Path, whiteStroke);
+
+    // 2. Right Child Face (Slightly lower & lighter blue #60A5FA)
+    final c2Center = Offset(72 * scale, 58 * scale);
+    final c2Radius = 28 * scale;
+    final c2Fill = Paint()
+      ..color = const Color(0xFF60A5FA)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(c2Center, c2Radius, c2Fill);
+
+    // Hair knot / bun
+    final bunFill = Paint()
+      ..color = const Color(0xFF2563EB)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(72 * scale, 30 * scale), 6.5 * scale, bunFill);
+
+    // Right child smiling eyes (curved lines)
+    final eye1Path = Path();
+    eye1Path.moveTo(62 * scale, 54 * scale);
+    eye1Path.quadraticBezierTo(66 * scale, 49 * scale, 70 * scale, 54 * scale);
+    canvas.drawPath(eye1Path, whiteStroke);
+
+    final eye2Path = Path();
+    eye2Path.moveTo(76 * scale, 54 * scale);
+    eye2Path.quadraticBezierTo(80 * scale, 49 * scale, 84 * scale, 54 * scale);
+    canvas.drawPath(eye2Path, whiteStroke);
+
+    // Right child rosy cheeks
+    final cheek2Fill = Paint()
+      ..color = const Color(0xFFBFDBFE)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(58 * scale, 60 * scale), 4.5 * scale, cheek2Fill);
+    canvas.drawCircle(Offset(88 * scale, 60 * scale), 4.5 * scale, cheek2Fill);
+
+    // Right child open smile
+    final smile2Path = Path();
+    smile2Path.moveTo(66 * scale, 60 * scale);
+    smile2Path.quadraticBezierTo(
+      73 * scale,
+      70 * scale,
+      80 * scale,
+      60 * scale,
+    );
+    smile2Path.close();
+    canvas.drawPath(smile2Path, whiteFill);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ---------------------------------------------------------------------------

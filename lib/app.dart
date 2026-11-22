@@ -14,6 +14,20 @@ class PediaCareApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
       routerConfig: ref.watch(routerProvider),
+      builder: (context, child) {
+        // Enforce authentic mobile viewport constraint across desktop/web
+        return ColoredBox(
+          color: const Color(0xFFF1F5F9), // Soft neutral background for desktop framing
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: ClipRect(
+                child: child ?? const SizedBox.shrink(),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

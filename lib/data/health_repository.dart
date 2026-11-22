@@ -25,18 +25,32 @@ class HealthRepository {
     required String gender,
     String? bloodGroup,
     String? allergies,
+    double? weightKg,
+    double? heightCm,
+    double? birthWeightKg,
+    String? chronicConditions,
+    String? emergencyContact,
+    String? pediatrician,
   }) async {
+    final payload = <String, dynamic>{
+      'parent_id': parentId,
+      'name': name.trim(),
+      'dob': toDbDate(dob),
+      'gender': gender,
+      'blood_group': bloodGroup,
+      'allergies': (allergies ?? '').trim().isEmpty ? null : allergies!.trim(),
+      'consent_given_at': DateTime.now().toUtc().toIso8601String(),
+    };
+    if (weightKg != null) payload['weight_kg'] = weightKg;
+    if (heightCm != null) payload['height_cm'] = heightCm;
+    if (birthWeightKg != null) payload['birth_weight_kg'] = birthWeightKg;
+    if (chronicConditions != null) payload['chronic_conditions'] = chronicConditions;
+    if (emergencyContact != null) payload['emergency_contact'] = emergencyContact;
+    if (pediatrician != null) payload['pediatrician'] = pediatrician;
+
     final row = await _c
         .from('children')
-        .insert({
-          'parent_id': parentId,
-          'name': name.trim(),
-          'dob': toDbDate(dob),
-          'gender': gender,
-          'blood_group': bloodGroup,
-          'allergies': (allergies ?? '').trim().isEmpty ? null : allergies!.trim(),
-          'consent_given_at': DateTime.now().toUtc().toIso8601String(),
-        })
+        .insert(payload)
         .select()
         .single();
     return Child.fromJson(row);

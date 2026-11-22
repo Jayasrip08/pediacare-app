@@ -10,6 +10,7 @@ import '../shared/growth_view.dart';
 import '../shared/records_view.dart';
 import '../shared/vaccines_view.dart';
 import 'child_scope.dart';
+import 'parent_bottom_nav.dart';
 
 class ParentVaccinesScreen extends StatelessWidget {
   const ParentVaccinesScreen({super.key});
@@ -38,6 +39,7 @@ class ParentRecordsScreen extends StatelessWidget {
   Widget build(BuildContext context) => ChildScope(
         title: 'Reports & documents',
         builder: (_, child) => RecordsView(childId: child.id),
+        bottomNavigationBar: const ParentBottomNav(currentIndex: 3),
       );
 }
 

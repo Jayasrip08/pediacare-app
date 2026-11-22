@@ -381,10 +381,10 @@ class _LogAncSheet extends StatefulWidget {
 
 class _LogAncSheetState extends State<_LogAncSheet> {
   late final TextEditingController _weeksCtrl;
-  final _bpCtrl = TextEditingController(text: '120/80');
-  final _weightCtrl = TextEditingController(text: '62.0');
-  final _fhrCtrl = TextEditingController(text: '144');
-  final _fundalCtrl = TextEditingController(text: '24.0');
+  final _bpCtrl = TextEditingController();
+  final _weightCtrl = TextEditingController();
+  final _fhrCtrl = TextEditingController();
+  final _fundalCtrl = TextEditingController();
   final _adviceCtrl = TextEditingController();
 
   @override
